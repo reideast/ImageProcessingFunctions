@@ -2,14 +2,6 @@ const DEFAULT_FILE = 'images/cookiemonster.jpg';
 
 let isImageLoaded = false;
 
-let elLoadButton = document.getElementById('loadDefaultImageButton');
-elLoadButton.addEventListener('click', loadImageByDefaultFilename);
-elLoadButton.innerText = 'Load \'' + DEFAULT_FILE + '\'';
-document.getElementById('filename').addEventListener('change', loadImageByFileInput);
-document.getElementById('reloadButton').addEventListener('click', loadImageByFileInput);
-
-setStylesUnloaded();
-
 function loadImageByFileInput() {
     const fileListItem = document.getElementById('filename').files[0];
     if (fileListItem) {
@@ -46,18 +38,43 @@ function paintLoadedImage(img, filenameDescription) {
     saveOp('Load ' + filenameDescription);
 }
 
-function setStylesLoaded() {
+const DISABLED = true, ENABLED = false;
+ function setStylesLoaded() {
     isImageLoaded = true;
-    const operationButtons = document.getElementById("processImageOperations").childNodes;
-    for (let i = 0; i < operationButtons.length; ++i) {
-        operationButtons.item(i).disabled = false;
+    const opContainers = document.getElementsByClassName("opContainer");
+    for (let i = 0; i < opContainers.length; ++i) {
+        recursiveToggleDisable(opContainers[i], ENABLED);
     }
 }
 
-function setStylesUnloaded() {
+ function setStylesUnloaded() {
     isImageLoaded = false;
-    const operationButtons = document.getElementById("processImageOperations").childNodes;
-    for (let i = 0; i < operationButtons.length; ++i) {
-        operationButtons.item(i).disabled = true;
+    const opContainers = document.getElementsByClassName("opContainer");
+    for (let i = 0; i < opContainers.length; ++i) {
+        recursiveToggleDisable(opContainers[i], DISABLED);
     }
 }
+
+function recursiveToggleDisable(el, state) {
+    if (el.tagName === "INPUT" || el.tagName === "BUTTON") {
+        el.disabled = state;
+    }
+    let potentialChildren = el.childNodes;
+    for (let j = 0; j < potentialChildren.length; ++j) {
+        if (potentialChildren[j].nodeType === Node.ELEMENT_NODE) {
+            recursiveToggleDisable(potentialChildren[j], state);
+        }
+    }
+}
+
+// **************************************************************************
+// DOM Setup with these encapsulated methods
+// **************************************************************************
+
+let elLoadButton = document.getElementById('loadDefaultImageButton');
+elLoadButton.addEventListener('click', loadImageByDefaultFilename);
+elLoadButton.innerText = 'Load \'' + DEFAULT_FILE + '\'';
+document.getElementById('filename').addEventListener('change', loadImageByFileInput);
+document.getElementById('reloadButton').addEventListener('click', loadImageByFileInput);
+
+setStylesUnloaded();

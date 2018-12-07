@@ -1,17 +1,5 @@
-const buttonUndo = document.getElementById('undoButton');
-const buttonRedo = document.getElementById('redoButton');
-
-buttonUndo.addEventListener('click', undo);
-buttonRedo.addEventListener('click', redo);
-
-buttonUndo.disabled = true;
-buttonRedo.disabled = true;
-
 let imgDataHistory = [];  // Scheme: { operation: str - op name, data: canvas img data }
 let pointInHistory = 0;
-
-imgDataHistory.push({ operation: 'init', data: ctx.getImageData(0, 0, 500, 500) });
-
 
 // DEBUG: Undo buffer indices visualisation
 // 0 is the blank canvas op
@@ -32,7 +20,7 @@ imgDataHistory.push({ operation: 'init', data: ctx.getImageData(0, 0, 500, 500) 
 // 0, 1, 2, 3, 4'     <- length is 5
 //             ^ pointInHistory is 3
 
-function saveOp(opDescription) {
+ function saveOp(opDescription) {
     if (pointInHistory !== imgDataHistory.length - 1) {
         // A new op wipes out the redo buffer
         imgDataHistory = imgDataHistory.slice(0, pointInHistory + 1);  // +1 so as to not include pointInHistory
@@ -44,7 +32,7 @@ function saveOp(opDescription) {
     buttonRedo.disabled = true;
 }
 
-function undo() {
+ function undo() {
     if (pointInHistory !== 0) {  // Should be prevented by button being disabled, but being cautious
         pointInHistory -= 1;
         const previousOp = imgDataHistory[pointInHistory];
@@ -66,7 +54,7 @@ function undo() {
     }
 }
 
-function redo() {
+ function redo() {
     if (pointInHistory !== imgDataHistory.length - 1) {
         pointInHistory += 1;
         const nextOp = imgDataHistory[pointInHistory];
@@ -87,3 +75,18 @@ function redo() {
         console.warn('Redo buffer is empty');
     }
 }
+
+// **************************************************************************
+// DOM Setup with these encapsulated methods
+// **************************************************************************
+
+const buttonUndo = document.getElementById('undoButton');
+const buttonRedo = document.getElementById('redoButton');
+
+buttonUndo.addEventListener('click', undo);
+buttonRedo.addEventListener('click', redo);
+
+buttonUndo.disabled = true;
+buttonRedo.disabled = true;
+
+imgDataHistory.push({ operation: 'init', data: ctx.getImageData(0, 0, 500, 500) });
