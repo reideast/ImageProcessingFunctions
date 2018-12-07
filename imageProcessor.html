@@ -76,27 +76,27 @@
                 </tr>
                 <tr>
                     <td>
-                        <table class="matrix">
+                        <table class="matrix" id="convolutionMatrix3x3">
                             <!--tr*3>td*3>input[type=text size=1].convThree#convThree$-->
                             <tr>
-                                <td><input type="text" class="convThree" id="convThree0"></td>
-                                <td><input type="text" class="convThree" id="convThree1"></td>
-                                <td><input type="text" class="convThree" id="convThree2"></td>
+                                <td><input type="text" class="convThree" id="convThree00"></td>
+                                <td><input type="text" class="convThree" id="convThree01"></td>
+                                <td><input type="text" class="convThree" id="convThree02"></td>
                             </tr>
                             <tr>
-                                <td><input type="text" class="convThree" id="convThree3"></td>
-                                <td><input type="text" class="convThree" id="convThree4"></td>
-                                <td><input type="text" class="convThree" id="convThree5"></td>
+                                <td><input type="text" class="convThree" id="convThree03"></td>
+                                <td><input type="text" class="convThree" id="convThree04"></td>
+                                <td><input type="text" class="convThree" id="convThree05"></td>
                             </tr>
                             <tr>
-                                <td><input type="text" class="convThree" id="convThree6"></td>
-                                <td><input type="text" class="convThree" id="convThree7"></td>
-                                <td><input type="text" class="convThree" id="convThree8"></td>
+                                <td><input type="text" class="convThree" id="convThree06"></td>
+                                <td><input type="text" class="convThree" id="convThree07"></td>
+                                <td><input type="text" class="convThree" id="convThree08"></td>
                             </tr>
                         </table>
                     </td>
                     <td>
-                        <table class="matrix">
+                        <table class="matrix" id="convolutionMatrix5x5">
                             <tr>
                                 <td><input type="text" class="convFive" id="convFive00"></td>
                                 <td><input type="text" class="convFive" id="convFive01"></td>
@@ -176,6 +176,25 @@
         callback();
     }
 
+    function  loopKernel(kernelSize, imgData, beforeEachKernel, kernelPixelProc, afterEachKernel, callback) {
+        let kernelBorderSize = Math.floor(kernelSize / 2);
+        for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
+            for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
+                beforeEachKernel();
+                for (let yy = -kernelBorderSize; yy <= kernelBorderSize; ++yy) {
+                    for (let xx = -kernelBorderSize; xx <= kernelBorderSize; ++xx) {
+                        let i = ((y + yy) * imgData.width + (x + xx)) * 4;
+                        let kernelCellIndex = ((yy + kernelBorderSize) * kernelSize) + (xx + kernelBorderSize);
+                        kernelPixelProc(i, kernelCellIndex);
+                    }
+                }
+                let kernelCenterIndex = ((y * imgData.width) + x) * 4;
+                afterEachKernel(kernelCenterIndex);
+            }
+        }
+        callback();
+    }
+
     function noBlue() {
         const imgData = get();
         loopEachPixel(imgData, (i) => {
@@ -205,6 +224,7 @@
         const imgData = get();
         // TODO: Should threshold ALWAYS greyscale first? Shouldn't the user get to specify?
         greyscaleProcessor(imgData, (greyscaleImageData) => {
+            // TODO: to avoid callback chaining, convert everything to promises, or maybe async
             thresholdProcessor(level, greyscaleImageData, (thresholdImageData) => {
                 ctx.putImageData(thresholdImageData, 0, 0);
                 saveOp('Threshold ' + level);
@@ -237,6 +257,93 @@
             imgData.data[i + 2] = 255 - imgData.data[i + 2];
         }, () => callback(imgData));
     }
+
+    function convolutionThree() {
+        let kernel = readConvolutionMatrixArray("convThree");
+        console.log(kernel);
+        convolutionProcessor(3, kernel, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            saveOp("Convolution 3x3");
+            console.log("Was modified? " + wasModified);
+        })
+    }
+
+    function convolutionFive() {
+        let kernel = readConvolutionMatrixArray("convFive");
+        console.log(kernel);
+        convolutionProcessor(5, kernel, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            saveOp("Convolution 5x5");
+            console.log("Was modified? " + wasModified);
+        })
+    }
+
+    function convolutionProcessor(convolutionSize, kernel, imgData, callback) {
+        let anyModified = false;
+        let newImageData = new ImageData(imgData.width, imgData.height);
+        for (let i = 0; i < imgData.data.length; ++i) {
+            newImageData.data[i] = imgData.data[i];  // Clone
+        }
+
+        let redSum, greenSum, blueSum;
+        loopKernel(convolutionSize, imgData, () => {
+            redSum = blueSum = greenSum = 0.0;
+        }, (i, kernelCellIndex) => {
+            redSum += imgData.data[i + 0] * kernel[kernelCellIndex];
+            greenSum += imgData.data[i + 1] * kernel[kernelCellIndex];
+            blueSum += imgData.data[i + 2] * kernel[kernelCellIndex];
+        }, (centerIndex) => {
+            newImageData.data[centerIndex + 0] = parseInt(redSum);
+            newImageData.data[centerIndex + 1] = parseInt(greenSum);
+            newImageData.data[centerIndex + 2] = parseInt(blueSum);
+            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]
+                || imgData.data[centerIndex + 1] !== newImageData.data[centerIndex + 1]
+                || imgData.data[centerIndex + 2] !== newImageData.data[centerIndex + 2]) {
+                anyModified = true;
+            }
+        }, () => {
+            callback(newImageData, anyModified);
+        });
+    }
+
+    function readConvolutionMatrixArray(inputElemClass) {
+        const inputs = document.getElementsByClassName(inputElemClass);
+        let kernel = [];
+        let num, value, divPos;
+        for (let i = 0; i < inputs.length; ++i) {
+            value = inputs[i].value;
+            if ((divPos = value.indexOf("/")) !== -1) {
+                // Process fractions like "1/9"
+                num = parseFloat(value.slice(0, divPos)) / parseFloat(value.slice(divPos + 1));
+            } else {
+                num = parseFloat(value);
+            }
+            if (Number.isNaN(num)) {
+                throw "Value for convolution '" + value + "' could not be parsed as a number";
+            }
+            kernel.push(num);
+        }
+        return kernel;
+    }
+
+    function autoInputMatrix(...matrixCells) {
+        let matrixTextBoxes;
+        switch (matrixCells.length) {
+            case 9:
+                matrixTextBoxes = document.getElementsByClassName("convThree");
+                break;
+            case 25:
+                matrixTextBoxes = document.getElementsByClassName("convFive");
+                break;
+            default:
+                throw 'Wrong number of matrix cells to put into text boxes' + matrixCells.length;
+        }
+
+        for (let i = 0; i < matrixTextBoxes.length; ++i) {
+            matrixTextBoxes[i].value = matrixCells[i].toString();
+        }
+    }
+
 </script>
 </body>
 </html>
