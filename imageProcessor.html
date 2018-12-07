@@ -135,6 +135,20 @@
                         </table>
                     </td>
                 </tr>
+                <tr>
+                    <td>
+                        <button onclick="autoInputMatrix(-1, -1, -1, 2, 2, 2, -1, -1, -1)">Horizontal Sobel Edge</button>
+                        <br>
+                        <button onclick="autoInputMatrix(-1, 2, -1, -1, 2, -1, -1, 2, -1)">Vertical Sobel Edge</button>
+                        <br>
+                        <button onclick="autoInputMatrix(-1, -1, -1, -1, 8, -1, -1, -1, -1)">Laplacian Edge</button>
+                        <br>
+                        <button onclick="autoInputMatrix('1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9')">Blur</button>
+                    </td>
+                    <td>
+                        <button onclick="autoInputMatrix('1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25')">Blur</button>
+                    </td>
+                </tr>
             </table>
         </td>
     </tr>
