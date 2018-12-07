@@ -7,6 +7,30 @@
         td {
             vertical-align: top;
         }
+
+        .matrix {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+        .matrix tr, .matrix td, .matrix input {
+            margin: 0;
+            padding: 0;
+        }
+        .matrix td {
+            border: 1px solid #555;
+        }
+        .matrix input {
+            border: 0;
+            text-align: center;
+            width: 24px;
+            height: 24px;
+        }
+        /* .matrix tr:not(:last-child) td {
+            border-bottom: 1px solid;
+        }
+        .matrix td:not(:last-child) {
+            border-right: 1px solid;
+        } */
     </style>
 </head>
 <body>
@@ -19,15 +43,6 @@
         </td>
     </tr>
     <tr>
-        <td id="processImageOperations">
-            <button onclick="noBlue()">No Blue</button>
-            <button onclick="greyscale()">Greyscale</button>
-            <button onclick="invert()">Invert</button>
-            <input id="threshold" type="text" size="3" value="127">
-            <button onclick="threshold(parseInt(document.getElementById('threshold').value))">Threshold</button>
-        </td>
-    </tr>
-    <tr>
         <td id="undoBufferOperations">
             <button id="undoButton" style="display: inline-block">Undo</button>
             <button id="redoButton" style="display: inline-block">Redo</button>
@@ -37,6 +52,90 @@
     <tr>
         <td id="canvasArea">
             <canvas id="imgCanvas" style="border: 6px solid #555" width="500" height="500"></canvas>
+        </td>
+    </tr>
+    <tr>
+        <td class="opContainer" id="processImageOperations">
+            <button onclick="noBlue()">No Blue</button>
+            <button onclick="greyscale()">Greyscale</button>
+            <button onclick="invert()">Invert</button>
+            <input id="threshold" type="text" size="3" value="127">
+            <button onclick="threshold(parseInt(document.getElementById('threshold').value))">Threshold</button>
+        </td>
+    </tr>
+    <tr>
+        <td class="opContainer" id="convolutionOperations">
+            <table>
+                <tr>
+                    <td>
+                        <button onclick="convolutionThree()">Apply 3x3</button>
+                    </td>
+                    <td>
+                        <button onclick="convolutionFive()">Apply 5x5</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table class="matrix">
+                            <!--tr*3>td*3>input[type=text size=1].convThree#convThree$-->
+                            <tr>
+                                <td><input type="text" class="convThree" id="convThree0"></td>
+                                <td><input type="text" class="convThree" id="convThree1"></td>
+                                <td><input type="text" class="convThree" id="convThree2"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convThree" id="convThree3"></td>
+                                <td><input type="text" class="convThree" id="convThree4"></td>
+                                <td><input type="text" class="convThree" id="convThree5"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convThree" id="convThree6"></td>
+                                <td><input type="text" class="convThree" id="convThree7"></td>
+                                <td><input type="text" class="convThree" id="convThree8"></td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td>
+                        <table class="matrix">
+                            <tr>
+                                <td><input type="text" class="convFive" id="convFive00"></td>
+                                <td><input type="text" class="convFive" id="convFive01"></td>
+                                <td><input type="text" class="convFive" id="convFive02"></td>
+                                <td><input type="text" class="convFive" id="convFive03"></td>
+                                <td><input type="text" class="convFive" id="convFive04"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convFive" id="convFive05"></td>
+                                <td><input type="text" class="convFive" id="convFive06"></td>
+                                <td><input type="text" class="convFive" id="convFive07"></td>
+                                <td><input type="text" class="convFive" id="convFive08"></td>
+                                <td><input type="text" class="convFive" id="convFive09"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convFive" id="convFive10"></td>
+                                <td><input type="text" class="convFive" id="convFive11"></td>
+                                <td><input type="text" class="convFive" id="convFive12"></td>
+                                <td><input type="text" class="convFive" id="convFive13"></td>
+                                <td><input type="text" class="convFive" id="convFive14"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convFive" id="convFive15"></td>
+                                <td><input type="text" class="convFive" id="convFive16"></td>
+                                <td><input type="text" class="convFive" id="convFive17"></td>
+                                <td><input type="text" class="convFive" id="convFive18"></td>
+                                <td><input type="text" class="convFive" id="convFive19"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" class="convFive" id="convFive20"></td>
+                                <td><input type="text" class="convFive" id="convFive21"></td>
+                                <td><input type="text" class="convFive" id="convFive22"></td>
+                                <td><input type="text" class="convFive" id="convFive23"></td>
+                                <td><input type="text" class="convFive" id="convFive24"></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 </table>
