@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>07 image proc</title>
+    <style>
+        td {
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+<table>
+    <tr>
+        <td>
+            <input type="file" id="filename">
+            <button id="reloadButton" style="display: none;">[load]</button>
+            <button id="loadDefaultImageButton" style="display: inline-block;">[load]</button>
+        </td>
+    </tr>
+    <tr>
+        <td id="processImageOperations">
+            <button onclick="noBlue()">No Blue</button>
+            <button onclick="greyscale()">Greyscale</button>
+            <button onclick="invert()">Invert</button>
+            <input id="threshold" type="text" size="3" value="127">
+            <button onclick="threshold(parseInt(document.getElementById('threshold').value))">Threshold</button>
+        </td>
+    </tr>
+    <tr>
+        <td id="undoBufferOperations">
+            <button id="undoButton" style="display: inline-block">Undo</button>
+            <button id="redoButton" style="display: inline-block">Redo</button>
+            <span id="lastOp"></span>
+        </td>
+    </tr>
+    <tr>
+        <td id="canvasArea">
+            <canvas id="imgCanvas" style="border: 6px solid #555" width="500" height="500"></canvas>
+        </td>
+    </tr>
+</table>
+
+<script>
+    // **************************************************************************
+    // Globals
+    // **************************************************************************
+
+    const canvas = document.getElementById('imgCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+</script>
+<script src="functionsLoadImage.js"></script>
+<script src="functionsUndoBuffer.js"></script>
+<script>
+    // **************************************************************************
+    // Image Processing Functions
+    // **************************************************************************
+
+    function get() {
+        if (isImageLoaded) {
+            return ctx.getImageData(0, 0, width, height);
+        } else {
+            console.error('Image not loaded yet');
+            throw 'Image not loaded yet';  // Kills calling function
+        }
+    }
+
+    function loopEachPixel(imgData, pixelProc, callback) {
+        for (let y = 0; y < imgData.height; ++y) {
+            for (let x = 0; x < imgData.width; ++x) {
+                let i = (y * imgData.width + x) * 4;
+                pixelProc(i, x, y);
+            }
+        }
+        callback();
+    }
+
+    function noBlue() {
+        const imgData = get();
+        loopEachPixel(imgData, (i) => {
+            imgData.data[i + 2] = 0;
+        }, () => {
+            ctx.putImageData(imgData, 0, 0);
+            saveOp('Remove Blue');
+        });
+    }
+
+    function greyscale() {
+        const imgData = get();
+        greyscaleProcessor(imgData, (greyscaleImageData) => {
+            ctx.putImageData(greyscaleImageData, 0, 0);
+            saveOp('Greyscale');
+        });
+    }
+
+    function greyscaleProcessor(imgData, callback) {
+        loopEachPixel(imgData, (i) => {
+            const avgRGB = (imgData.data[i + 0] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
+            imgData.data[i + 0] = imgData.data[i + 1] = imgData.data[i + 2] = avgRGB;
+        }, () => callback(imgData));
+    }
+
+    function threshold(level) {
+        const imgData = get();
+        // TODO: Should threshold ALWAYS greyscale first? Shouldn't the user get to specify?
+        greyscaleProcessor(imgData, (greyscaleImageData) => {
+            thresholdProcessor(level, greyscaleImageData, (thresholdImageData) => {
+                ctx.putImageData(thresholdImageData, 0, 0);
+                saveOp('Threshold ' + level);
+            });
+        });
+    }
+
+    function thresholdProcessor(level, imgData, callback) {
+        loopEachPixel(imgData, (i) => {
+            if (imgData.data[i + 0] >= level) {
+                imgData.data[i + 0] = imgData.data[i + 1] = imgData.data[i + 2] = 255;
+            } else {
+                imgData.data[i + 0] = imgData.data[i + 1] = imgData.data[i + 2] = 0;
+            }
+        }, () => callback(imgData));
+    }
+
+    function invert() {
+        const imgData = get();
+        invertProcessor(imgData, (invertedData) => {
+            ctx.putImageData(invertedData, 0, 0);
+            saveOp('Invert');
+        });
+    }
+
+    function invertProcessor(imgData, callback) {
+        loopEachPixel(imgData, (i) => {
+            imgData.data[i + 0] = 255 - imgData.data[i + 0];
+            imgData.data[i + 1] = 255 - imgData.data[i + 1];
+            imgData.data[i + 2] = 255 - imgData.data[i + 2];
+        }, () => callback(imgData));
+    }
+</script>
+</body>
+</html>
