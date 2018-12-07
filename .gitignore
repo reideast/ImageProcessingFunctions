@@ -1,0 +1,22 @@
+*.pdf
+.idea/
+*.jpg
+*.png
+*.zip
+*.x3d
+GraphicsProject/
+
+01 canvas arc.html
+01 canvas barchart.html
+01 canvas line and import bitmap.html
+01 canvas polygon fill and stroke.html
+01 canvas squares.html
+02b perspective projeciton demo.html
+04b perspective projection with priority fill.html
+05b-canvasAsteroids.html
+06b Perspective Projection Demo With filled polygons, priority fill, Lambert shading and backface culling.html
+07b-HTML5's canvas Part II- Pixel Manipulation.url
+10-FrameDifferencingCode/frameDifferencing.html
+10-FrameDifferencingCode/frameDifferencingFunctions.js
+imageProcessingFunctions.js
+test-x3dom.html
