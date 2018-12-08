@@ -25,7 +25,12 @@ let pointInHistory = 0;
         // A new op wipes out the redo buffer
         imgDataHistory = imgDataHistory.slice(0, pointInHistory + 1);  // +1 so as to not include pointInHistory
     }
-    imgDataHistory.push({ operation: opDescription, data: ctx.getImageData(0, 0, width, height) });
+    imgDataHistory.push({
+        operation: opDescription,
+        isGreyscale: isGreyscale,
+        isBinary: isBinary,
+        data: ctx.getImageData(0, 0, width, height)
+    });
     pointInHistory += 1;
     document.getElementById('lastOp').innerText = 'Last operation: ' + opDescription;
     buttonUndo.disabled = false;
@@ -41,6 +46,8 @@ let pointInHistory = 0;
         canvas.width = width;
         canvas.height = height;
         ctx.putImageData(previousOp.data, 0, 0);
+        isBinary = previousOp.isBinary;
+        isGreyscale = previousOp.isGreyscale;
         buttonRedo.disabled = false;
         if (pointInHistory === 0) {  // Blank canvas will be first Op. Never let that be undone
             buttonUndo.disabled = true;
@@ -62,6 +69,8 @@ let pointInHistory = 0;
         height = nextOp.data.height;
         canvas.width = width;
         canvas.height = height;
+        isGreyscale = nextOp.isGreyscale;
+        isBinary = nextOp.isBinary;
         document.getElementById('lastOp').innerText = 'Last operation: ' + nextOp.operation;
         buttonUndo.disabled = false;
         if (!isImageLoaded) {

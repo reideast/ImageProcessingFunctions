@@ -226,6 +226,8 @@
     const canvas = document.getElementById('imgCanvas');
     const ctx = canvas.getContext('2d');
     let width, height;
+    let isGreyscale = false;
+    let isBinary = false;
 
 </script>
 <script src="functionsLoadImage.js"></script>
@@ -279,6 +281,7 @@
             imgData.data[i + 2] = 0;
         }, () => {
             ctx.putImageData(imgData, 0, 0);
+            isGreyscale = isBinary = false;
             saveOp('Remove Blue');
         });
     }
@@ -287,6 +290,8 @@
         const imgData = get();
         greyscaleProcessor(imgData, (greyscaleImageData) => {
             ctx.putImageData(greyscaleImageData, 0, 0);
+            isGreyscale = true;
+            isBinary = false;  // This won't be true if the image was already binary. However, it has been deemed not worth the expense to actually compute if it's truly still binary.
             saveOp('Greyscale');
         });
     }
@@ -305,6 +310,7 @@
             // TODO: to avoid callback chaining, convert everything to promises, or maybe async
             thresholdProcessor(level, greyscaleImageData, (thresholdImageData) => {
                 ctx.putImageData(thresholdImageData, 0, 0);
+                isBinary = isGreyscale = true;
                 saveOp('Threshold ' + level);
             });
         });
@@ -324,6 +330,7 @@
         const imgData = get();
         invertProcessor(imgData, (invertedData) => {
             ctx.putImageData(invertedData, 0, 0);
+            // Doesn't change greyscale one way or another
             saveOp('Invert');
         });
     }
@@ -341,6 +348,7 @@
         console.log(kernel, factor);
         convolutionProcessor(3, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
+            // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
             saveOp("Convolution 3x3");
             console.log("Was modified? " + wasModified);
         })
@@ -351,6 +359,7 @@
         console.log(kernel, factor);
         convolutionProcessor(5, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
+            // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
             saveOp("Convolution 5x5");
             console.log("Was modified? " + wasModified);
         })
@@ -361,12 +370,9 @@
             factor = 1;
         }
 
-        let anyModified = false;
-        let newImageData = new ImageData(imgData.width, imgData.height);
-        for (let i = 0; i < imgData.data.length; ++i) {
-            newImageData.data[i] = imgData.data[i];  // Clone
-        }
+        let newImageData = cloneImageData(imgData);
 
+        let anyModified = false;
         let redSum, greenSum, blueSum;
         loopKernel(convolutionSize, imgData, () => {
             redSum = blueSum = greenSum = 0.0;
@@ -439,6 +445,14 @@
         for (let i = 0; i < matrixTextBoxes.length; ++i) {
             matrixTextBoxes[i].value = matrixCells[i].toString();
         }
+    }
+
+    function cloneImageData(imgData) {
+        let newImageData = new ImageData(imgData.width, imgData.height);
+        for (let i = 0; i < imgData.data.length; ++i) {
+            newImageData.data[i] = imgData.data[i];  // Clone each pixel's 4 color elements
+        }
+        return newImageData;
     }
 
     function erode() {
