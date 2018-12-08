@@ -19,11 +19,20 @@
         .matrix td {
             border: 1px solid #555;
         }
-        .matrix input {
+        .matrix input, .filler {
             border: 0;
             text-align: center;
             width: 24px;
             height: 24px;
+        }
+        td.filler {
+            border: 0;
+        }
+        td.spacer {
+            border: 0;
+            width: 12px;
+            text-align: center;
+            vertical-align: middle;
         }
         /* .matrix tr:not(:last-child) td {
             border-bottom: 1px solid;
@@ -31,7 +40,7 @@
         .matrix td:not(:last-child) {
             border-right: 1px solid;
         } */
-    </style>
+     </style>
 </head>
 <body>
 <table>
@@ -79,16 +88,25 @@
                         <table class="matrix" id="convolutionMatrix3x3">
                             <!--tr*3>td*3>input[type=text size=1].convThree#convThree$-->
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convThree" id="convThree00"></td>
                                 <td><input type="text" class="convThree" id="convThree01"></td>
                                 <td><input type="text" class="convThree" id="convThree02"></td>
                             </tr>
                             <tr>
+                                <td><input type="text" id="factorConvThree"></td>
+                                <td class="spacer">&times;</td>
+
                                 <td><input type="text" class="convThree" id="convThree03"></td>
                                 <td><input type="text" class="convThree" id="convThree04"></td>
                                 <td><input type="text" class="convThree" id="convThree05"></td>
                             </tr>
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convThree" id="convThree06"></td>
                                 <td><input type="text" class="convThree" id="convThree07"></td>
                                 <td><input type="text" class="convThree" id="convThree08"></td>
@@ -98,6 +116,9 @@
                     <td>
                         <table class="matrix" id="convolutionMatrix5x5">
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convFive" id="convFive00"></td>
                                 <td><input type="text" class="convFive" id="convFive01"></td>
                                 <td><input type="text" class="convFive" id="convFive02"></td>
@@ -105,6 +126,9 @@
                                 <td><input type="text" class="convFive" id="convFive04"></td>
                             </tr>
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convFive" id="convFive05"></td>
                                 <td><input type="text" class="convFive" id="convFive06"></td>
                                 <td><input type="text" class="convFive" id="convFive07"></td>
@@ -112,6 +136,9 @@
                                 <td><input type="text" class="convFive" id="convFive09"></td>
                             </tr>
                             <tr>
+                                <td><input type="text" id="factorConvFive"></td>
+                                <td class="spacer">&times;</td>
+
                                 <td><input type="text" class="convFive" id="convFive10"></td>
                                 <td><input type="text" class="convFive" id="convFive11"></td>
                                 <td><input type="text" class="convFive" id="convFive12"></td>
@@ -119,6 +146,9 @@
                                 <td><input type="text" class="convFive" id="convFive14"></td>
                             </tr>
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convFive" id="convFive15"></td>
                                 <td><input type="text" class="convFive" id="convFive16"></td>
                                 <td><input type="text" class="convFive" id="convFive17"></td>
@@ -126,6 +156,9 @@
                                 <td><input type="text" class="convFive" id="convFive19"></td>
                             </tr>
                             <tr>
+                                <td class="filler"></td>
+                                <td class="spacer"></td>
+
                                 <td><input type="text" class="convFive" id="convFive20"></td>
                                 <td><input type="text" class="convFive" id="convFive21"></td>
                                 <td><input type="text" class="convFive" id="convFive22"></td>
@@ -137,16 +170,25 @@
                 </tr>
                 <tr>
                     <td>
-                        <button onclick="autoInputMatrix(-1, -1, -1, 2, 2, 2, -1, -1, -1)">Horizontal Sobel Edge</button>
+                        <button onclick="autoInputMatrix('', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9')">Blur</button>
                         <br>
-                        <button onclick="autoInputMatrix(-1, 2, -1, -1, 2, -1, -1, 2, -1)">Vertical Sobel Edge</button>
+                        <button onclick="autoInputMatrix('', -1, -1, -1, 2, 2, 2, -1, -1, -1)">Horizontal Edge</button>
                         <br>
-                        <button onclick="autoInputMatrix(-1, -1, -1, -1, 8, -1, -1, -1, -1)">Laplacian Edge</button>
+                        <button onclick="autoInputMatrix('', -1, 2, -1, -1, 2, -1, -1, 2, -1)">Vertical Edge</button>
                         <br>
-                        <button onclick="autoInputMatrix('1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9', '1/9')">Blur</button>
+                        <button onclick="autoInputMatrix('', -1, -1, -1, -1, 8, -1, -1, -1, -1)">Laplacian Edge</button>
+                        <br>
+                        <button onclick="autoInputMatrix('1/4', -1, 0, 1, -2, 0, 2, -1, 0, 1)">Sobel Horizontal Edge</button>
+                        <br>
+                        <button onclick="autoInputMatrix('1/4', 1, 2, 1, 0, 0, 0, -1, -2, -1)">Sobel Vertical Edge</button>
+                        <br>
                     </td>
                     <td>
-                        <button onclick="autoInputMatrix('1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25')">Blur</button>
+                        <button onclick="autoInputMatrix('', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25', '1/25')">Blur</button>
+                        <br>
+                        <button onclick="autoInputMatrix('1/159', 2, 4, 5, 4, 2, 4, 9, 12, 9, 4, 5, 12, 15, 12, 5, 4, 9, 12, 9, 4, 2, 4, 5, 4, 2)">Gaussian Blur (StdDev=1.4px)</button>
+                        <br>
+                        <button onclick="autoInputMatrix('', 0, 0, 1, 0, 0, 0, 1, 2, 1, 0, 1, 2, -16, 2, 1, 0, 1, 2, 1, 0, 0, 0, 1, 0, 0)">Laplacian of Gaussian</button>
                     </td>
                 </tr>
             </table>
@@ -273,9 +315,9 @@
     }
 
     function convolutionThree() {
-        let kernel = readConvolutionMatrixArray("convThree");
-        console.log(kernel);
-        convolutionProcessor(3, kernel, get(), (processedImageData, wasModified) => {
+        let {kernel, factor} = readConvolutionMatrixArray("convThree", "factorConvThree");
+        console.log(kernel, factor);
+        convolutionProcessor(3, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             saveOp("Convolution 3x3");
             console.log("Was modified? " + wasModified);
@@ -283,16 +325,20 @@
     }
 
     function convolutionFive() {
-        let kernel = readConvolutionMatrixArray("convFive");
-        console.log(kernel);
-        convolutionProcessor(5, kernel, get(), (processedImageData, wasModified) => {
+        let {kernel, factor} = readConvolutionMatrixArray("convFive", "factorConvFive");
+        console.log(kernel, factor);
+        convolutionProcessor(5, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             saveOp("Convolution 5x5");
             console.log("Was modified? " + wasModified);
         })
     }
 
-    function convolutionProcessor(convolutionSize, kernel, imgData, callback) {
+    function convolutionProcessor(convolutionSize, kernel, factor, imgData, callback) {
+        if (factor === undefined) {
+            factor = 1;
+        }
+
         let anyModified = false;
         let newImageData = new ImageData(imgData.width, imgData.height);
         for (let i = 0; i < imgData.data.length; ++i) {
@@ -307,9 +353,9 @@
             greenSum += imgData.data[i + 1] * kernel[kernelCellIndex];
             blueSum += imgData.data[i + 2] * kernel[kernelCellIndex];
         }, (centerIndex) => {
-            newImageData.data[centerIndex + 0] = parseInt(redSum);
-            newImageData.data[centerIndex + 1] = parseInt(greenSum);
-            newImageData.data[centerIndex + 2] = parseInt(blueSum);
+            newImageData.data[centerIndex + 0] = parseInt(redSum) * factor;
+            newImageData.data[centerIndex + 1] = parseInt(greenSum) * factor;
+            newImageData.data[centerIndex + 2] = parseInt(blueSum) * factor;
             if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]
                 || imgData.data[centerIndex + 1] !== newImageData.data[centerIndex + 1]
                 || imgData.data[centerIndex + 2] !== newImageData.data[centerIndex + 2]) {
@@ -320,37 +366,52 @@
         });
     }
 
-    function readConvolutionMatrixArray(inputElemClass) {
-        const inputs = document.getElementsByClassName(inputElemClass);
-        let kernel = [];
-        let num, value, divPos;
-        for (let i = 0; i < inputs.length; ++i) {
-            value = inputs[i].value;
-            if ((divPos = value.indexOf("/")) !== -1) {
-                // Process fractions like "1/9"
-                num = parseFloat(value.slice(0, divPos)) / parseFloat(value.slice(divPos + 1));
-            } else {
-                num = parseFloat(value);
-            }
-            if (Number.isNaN(num)) {
-                throw "Value for convolution '" + value + "' could not be parsed as a number";
-            }
-            kernel.push(num);
+    function parseFloatOrFraction(value) {
+        let divisionSymbolPos, num;
+        if ((divisionSymbolPos = value.indexOf('/')) !== -1) {
+            // Process fractions like "1/9"
+            num = parseFloat(value.slice(0, divisionSymbolPos)) / parseFloat(value.slice(divisionSymbolPos + 1));
+        } else {
+            num = parseFloat(value);
         }
-        return kernel;
+        if (Number.isNaN(num)) {
+            throw 'Value for convolution \'' + value + '\' could not be parsed as a number';
+        }
+        return num;
     }
 
-    function autoInputMatrix(...matrixCells) {
+    function readConvolutionMatrixArray(inputElemClass, factorElemId) {
+        const inputs = document.getElementsByClassName(inputElemClass);
+        let kernel = [];
+        let num, value;
+        for (let i = 0; i < inputs.length; ++i) {
+            value = inputs[i].value;
+            num = parseFloatOrFraction(value);
+            kernel.push(num);
+        }
+
+        let factor = undefined;
+        const factorInputValue = document.getElementById(factorElemId).value;
+        if (factorInputValue.length !== 0) {
+            factor = parseFloatOrFraction(factorInputValue);
+        }
+
+        return {kernel: kernel, factor: factor};
+    }
+
+    function autoInputMatrix(factor, ...matrixCells) {
         let matrixTextBoxes;
         switch (matrixCells.length) {
             case 9:
+                document.getElementById("factorConvThree").value = factor;
                 matrixTextBoxes = document.getElementsByClassName("convThree");
                 break;
             case 25:
+                document.getElementById("factorConvFive").value = factor;
                 matrixTextBoxes = document.getElementsByClassName("convFive");
                 break;
             default:
-                throw 'Wrong number of matrix cells to put into text boxes' + matrixCells.length;
+                throw 'Wrong number of matrix cells to put into text boxes: ' + matrixCells.length;
         }
 
         for (let i = 0; i < matrixTextBoxes.length; ++i) {
