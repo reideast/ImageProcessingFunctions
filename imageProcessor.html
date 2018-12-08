@@ -40,6 +40,10 @@
         .matrix td:not(:last-child) {
             border-right: 1px solid;
         } */
+        .opContainer input[type=range] {
+            width: 60px;
+            margin: 0;
+        }
      </style>
 </head>
 <body>
@@ -75,25 +79,26 @@
     </tr>
     <tr>
         <td class="opContainer morphologicalOperations">
-            <!--TODO-->
+            <input id="sliderStructuringElem" type="range" min="2" max="50" step="1" value="5">
+            <input id="structuringElementSize" size="2" value="5">
             <button onclick="erode()">Erode</button>
-            <button onclick="dilate()">Dialate</button>
+            <button onclick="dilate()">Dilate</button>
             <button onclick="opening()">Opening</button>
             <button onclick="closing()">Closing</button>
         </td>
     </tr>
-    <tr>
-        <td class="opContainer" id="edgeDetectOperations">
-            <!-- TODO -->
-            <button onclick="sobel()">Apply Sobel 3x3</button>
-            <!-- TODO -->
-            <button onclick="compass()">Get Compass Magnitude</button>
-            <!-- TODO: Some sort of colour scale to represent the 8 cardinal directions? -->
-            <button onclick="compass()">Get Compass Direction</button>
-            <!-- TODO -->
-            <button onclick="canny()">Apply Canny Algorithm</button>
-        </td>
-    </tr>
+    <!--<tr>-->
+        <!--<td class="opContainer" id="edgeDetectOperations">-->
+            <!--&lt;!&ndash; TODO &ndash;&gt;-->
+            <!--<button onclick="sobel()">Apply Sobel 3x3</button>-->
+            <!--&lt;!&ndash; TODO &ndash;&gt;-->
+            <!--<button onclick="compass()">Get Compass Magnitude</button>-->
+            <!--&lt;!&ndash; TODO: Some sort of colour scale to represent the 8 cardinal directions? &ndash;&gt;-->
+            <!--<button onclick="compass()">Get Compass Direction</button>-->
+            <!--&lt;!&ndash; TODO &ndash;&gt;-->
+            <!--<button onclick="canny()">Apply Canny Algorithm</button>-->
+        <!--</td>-->
+    <!--</tr>-->
     <tr>
         <td class="opContainer" id="convolutionOperations">
             <table>
@@ -229,6 +234,24 @@
     let isGreyscale = false;
     let isBinary = false;
 
+    // **************************************************************************
+    // DOM Setup
+    // **************************************************************************
+
+    function connectSliderToText(sliderId, textId) {
+        // DEBUG: Not yet sure that this will work w/ multiple sliders/text boxes (because of closure scoping)
+        let sliderEl = document.getElementById(sliderId);
+        let textEl = document.getElementById(textId);
+        sliderEl.addEventListener("input", (event) => {
+            textEl.value = event.target.value;
+        });
+        textEl.addEventListener("input", (event) => {
+            sliderEl.value = parseInt(event.target.value);
+        });
+    }
+
+    connectSliderToText("sliderStructuringElem", "structuringElementSize");
+
 </script>
 <script src="functionsLoadImage.js"></script>
 <script src="functionsUndoBuffer.js"></script>
@@ -260,7 +283,8 @@
         let kernelBorderSize = Math.floor(kernelSize / 2);
         for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
             for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
-                beforeEachKernel();
+                let kernelCenterIndex = ((y * imgData.width) + x) * 4;
+                beforeEachKernel(kernelCenterIndex);
                 for (let yy = -kernelBorderSize; yy <= kernelBorderSize; ++yy) {
                     for (let xx = -kernelBorderSize; xx <= kernelBorderSize; ++xx) {
                         let i = ((y + yy) * imgData.width + (x + xx)) * 4;
@@ -268,7 +292,6 @@
                         kernelPixelProc(i, kernelCellIndex);
                     }
                 }
-                let kernelCenterIndex = ((y * imgData.width) + x) * 4;
                 afterEachKernel(kernelCenterIndex);
             }
         }
@@ -456,35 +479,128 @@
     }
 
     function erode() {
-        // TODO
+        let windowSize = parseInt(document.getElementById("structuringElementSize").value);
+        erodeProcessor(windowSize, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            isBinary = isGreyscale = true;  // Image is now binary after morphological processing
+            saveOp('Erode ' + windowSize + 'x' + windowSize + '');
+            console.log('Was modified? ' + wasModified);
+        });
     }
 
-    function erodeProcessor(windowSize) {
+    // TODO: These filters will break on odd-sized kernels, since loopKernel() is set up that way
+    // TODO:     Or will it? double check example
+    /**
+     * Perform erosion, using a square structuring element
+     * Note: Using WHITE as the foreground colour for all morphological processing
+     * @param structuringElementSize Width of square
+     * @param imgData Canvas image data
+     * @param callback Operation to perform when the image is completely processed
+     */
+    function erodeProcessor(structuringElementSize, imgData, callback) {
+        if (!isBinary) {
+            console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
+            alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
+                + 'Only the red channel will be used and preserved.\n\n'
+                + 'Consider reversing the changes and performing a threshold first.');
+        }
 
+        let newImageData = cloneImageData(imgData);
+
+        let anyModified = false;
+        let allPixelsForeground;
+        loopKernel(structuringElementSize, imgData, () => {
+            allPixelsForeground = true;
+        }, (i) => {
+            if (imgData.data[i] !== 255) {
+                allPixelsForeground = false;
+            }
+        }, (centerIndex) => {
+            // TODO: Is it erroneous to be subtracting the pixels if the filter doesn't pass?
+            newImageData.data[centerIndex + 0] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
+                = (allPixelsForeground ? 255 : 0);
+            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]) {
+                anyModified = true;
+            }
+        }, () => {
+            callback(newImageData, anyModified);
+        });
     }
 
     function dilate() {
-
+        let windowSize = parseInt(document.getElementById("structuringElementSize").value);
+        dilateProcessor(windowSize, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            isBinary = isGreyscale = true;  // Image is now binary after morphological processing
+            saveOp('Dilate ' + windowSize + 'x' + windowSize + '');
+            console.log('Was modified? ' + wasModified);
+        });
     }
 
-    function dilateProcessor(windowSize) {
+    function dilateProcessor(structuringElementSize, imgData, callback) {
+        if (!isBinary) {
+            console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
+            alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
+                + 'Only the red channel will be used and preserved.\n\n'
+                + 'Consider reversing the changes and performing a threshold first.');
+        }
 
+        let newImageData = cloneImageData(imgData);
+
+        let anyModified = false;
+        let anyPixelsForeground;
+        loopKernel(structuringElementSize, imgData, () => {
+            anyPixelsForeground = false;
+        }, (i) => {
+            if (imgData.data[i] === 255) {
+                anyPixelsForeground = true;
+            }
+        }, (centerIndex) => {
+            newImageData.data[centerIndex + 0] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
+                = (anyPixelsForeground ? 255 : 0);
+            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]) {
+                anyModified = true;
+            }
+        }, () => {
+            callback(newImageData, anyModified);
+        });
     }
+
 
     function opening() {
-
+        let windowSize = parseInt(document.getElementById("structuringElementSize").value);
+        openingProcessor(windowSize, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            isBinary = isGreyscale = true;  // Image is now binary after morphological processing
+            saveOp('Opening ' + windowSize + 'x' + windowSize + '');
+            console.log('Was modified? ' + wasModified);
+        });
     }
 
-    function openingProcessor(windowsSize) {
-
+    function openingProcessor(structuringElementSize, imgData, callback) {
+        erodeProcessor(structuringElementSize, imgData, (erodedImageData, didErodeModify) => {
+            dilateProcessor(structuringElementSize, erodedImageData, (erodeAndDilatedImageData, didDilateModify) => {
+                callback(erodeAndDilatedImageData, didErodeModify || didDilateModify);
+            })
+        });
     }
 
     function closing() {
-
+        let windowSize = parseInt(document.getElementById("structuringElementSize").value);
+        closingProcessor(windowSize, get(), (processedImageData, wasModified) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            isBinary = isGreyscale = true;  // Image is now binary after morphological processing
+            saveOp('Closing ' + windowSize + 'x' + windowSize + '');
+            console.log('Was modified? ' + wasModified);
+        });
     }
 
-    function closingProcessor(windowSize) {
-
+    function closingProcessor(structuringElementSize, imgData, callback) {
+        dilateProcessor(structuringElementSize, imgData, (dilatedImageData, didDilateModify) => {
+            erodeProcessor(structuringElementSize, dilatedImageData, (dilatedAndErodedImageData, didErodeModify) => {
+                callback(dilatedAndErodedImageData, didDilateModify || didErodeModify);
+            })
+        });
     }
 
 </script>
