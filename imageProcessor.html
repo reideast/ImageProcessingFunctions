@@ -49,6 +49,7 @@
             <input type="file" id="filename">
             <button id="reloadButton" style="display: none;">[load]</button>
             <button id="loadDefaultImageButton" style="display: inline-block;">[load]</button>
+            <button id="saveImageData" disabled style="display: inline-block;">Save</button>
         </td>
     </tr>
     <tr>
@@ -64,12 +65,33 @@
         </td>
     </tr>
     <tr>
-        <td class="opContainer" id="processImageOperations">
+        <td class="opContainer" id="globalPixelOperations">
             <button onclick="noBlue()">No Blue</button>
             <button onclick="greyscale()">Greyscale</button>
             <button onclick="invert()">Invert</button>
             <input id="threshold" type="text" size="3" value="127">
             <button onclick="threshold(parseInt(document.getElementById('threshold').value))">Threshold</button>
+        </td>
+    </tr>
+    <tr>
+        <td class="opContainer morphologicalOperations">
+            <!--TODO-->
+            <button onclick="erode()">Erode</button>
+            <button onclick="dilate()">Dialate</button>
+            <button onclick="opening()">Opening</button>
+            <button onclick="closing()">Closing</button>
+        </td>
+    </tr>
+    <tr>
+        <td class="opContainer" id="edgeDetectOperations">
+            <!-- TODO -->
+            <button onclick="sobel()">Apply Sobel 3x3</button>
+            <!-- TODO -->
+            <button onclick="compass()">Get Compass Magnitude</button>
+            <!-- TODO: Some sort of colour scale to represent the 8 cardinal directions? -->
+            <button onclick="compass()">Get Compass Direction</button>
+            <!-- TODO -->
+            <button onclick="canny()">Apply Canny Algorithm</button>
         </td>
     </tr>
     <tr>
@@ -417,6 +439,38 @@
         for (let i = 0; i < matrixTextBoxes.length; ++i) {
             matrixTextBoxes[i].value = matrixCells[i].toString();
         }
+    }
+
+    function erode() {
+        // TODO
+    }
+
+    function erodeProcessor(windowSize) {
+
+    }
+
+    function dilate() {
+
+    }
+
+    function dilateProcessor(windowSize) {
+
+    }
+
+    function opening() {
+
+    }
+
+    function openingProcessor(windowsSize) {
+
+    }
+
+    function closing() {
+
+    }
+
+    function closingProcessor(windowSize) {
+
     }
 
 </script>
