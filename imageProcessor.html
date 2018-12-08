@@ -70,21 +70,21 @@
     </tr>
     <tr>
         <td class="opContainer" id="globalPixelOperations">
-            <button onclick="noBlue()">No Blue</button>
-            <button onclick="greyscale()">Greyscale</button>
-            <button onclick="invert()">Invert</button>
+            <button onclick="noBlueHtmlInterface()">No Blue</button>
+            <button onclick="greyscaleHtmlInterface()">Greyscale</button>
+            <button onclick="invertHtmlInterface()">Invert</button>
             <input id="threshold" type="text" size="3" value="127">
-            <button onclick="threshold(parseInt(document.getElementById('threshold').value))">Threshold</button>
+            <button onclick="thresholdHtmlInterface(parseInt(document.getElementById('threshold').value))">Threshold</button>
         </td>
     </tr>
     <tr>
         <td class="opContainer morphologicalOperations">
             <input id="sliderStructuringElem" type="range" min="2" max="50" step="1" value="5">
             <input id="structuringElementSize" size="2" value="5">
-            <button onclick="erode()">Erode</button>
-            <button onclick="dilate()">Dilate</button>
-            <button onclick="opening()">Opening</button>
-            <button onclick="closing()">Closing</button>
+            <button onclick="erodeHtmlInterface()">Erode</button>
+            <button onclick="dilateHtmlInterface()">Dilate</button>
+            <button onclick="openingHtmlInterface()">Opening</button>
+            <button onclick="closingHtmlInterface()">Closing</button>
         </td>
     </tr>
     <!--<tr>-->
@@ -104,10 +104,10 @@
             <table>
                 <tr>
                     <td>
-                        <button onclick="convolutionThree()">Apply 3x3</button>
+                        <button onclick="convolutionHtmlInterfaceThree()">Apply 3x3</button>
                     </td>
                     <td>
-                        <button onclick="convolutionFive()">Apply 5x5</button>
+                        <button onclick="convolutionHtmlInterfaceFive()">Apply 5x5</button>
                     </td>
                 </tr>
                 <tr>
@@ -298,7 +298,7 @@
         callback();
     }
 
-    function noBlue() {
+    function noBlueHtmlInterface() {
         const imgData = get();
         loopEachPixel(imgData, (i) => {
             imgData.data[i + 2] = 0;
@@ -309,9 +309,9 @@
         });
     }
 
-    function greyscale() {
+    function greyscaleHtmlInterface() {
         const imgData = get();
-        greyscaleProcessor(imgData, (greyscaleImageData) => {
+        greyscale(imgData, (greyscaleImageData) => {
             ctx.putImageData(greyscaleImageData, 0, 0);
             isGreyscale = true;
             isBinary = false;  // This won't be true if the image was already binary. However, it has been deemed not worth the expense to actually compute if it's truly still binary.
@@ -319,19 +319,19 @@
         });
     }
 
-    function greyscaleProcessor(imgData, callback) {
+    function greyscale(imgData, callback) {
         loopEachPixel(imgData, (i) => {
             const avgRGB = (imgData.data[i + 0] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
             imgData.data[i + 0] = imgData.data[i + 1] = imgData.data[i + 2] = avgRGB;
         }, () => callback(imgData));
     }
 
-    function threshold(level) {
+    function thresholdHtmlInterface(level) {
         const imgData = get();
         // TODO: Should threshold ALWAYS greyscale first? Shouldn't the user get to specify?
-        greyscaleProcessor(imgData, (greyscaleImageData) => {
+        greyscale(imgData, (greyscaleImageData) => {
             // TODO: to avoid callback chaining, convert everything to promises, or maybe async
-            thresholdProcessor(level, greyscaleImageData, (thresholdImageData) => {
+            threshold(level, greyscaleImageData, (thresholdImageData) => {
                 ctx.putImageData(thresholdImageData, 0, 0);
                 isBinary = isGreyscale = true;
                 saveOp('Threshold ' + level);
@@ -339,7 +339,7 @@
         });
     }
 
-    function thresholdProcessor(level, imgData, callback) {
+    function threshold(level, imgData, callback) {
         loopEachPixel(imgData, (i) => {
             if (imgData.data[i + 0] >= level) {
                 imgData.data[i + 0] = imgData.data[i + 1] = imgData.data[i + 2] = 255;
@@ -349,16 +349,16 @@
         }, () => callback(imgData));
     }
 
-    function invert() {
+    function invertHtmlInterface() {
         const imgData = get();
-        invertProcessor(imgData, (invertedData) => {
+        invert(imgData, (invertedData) => {
             ctx.putImageData(invertedData, 0, 0);
             // Doesn't change greyscale one way or another
             saveOp('Invert');
         });
     }
 
-    function invertProcessor(imgData, callback) {
+    function invert(imgData, callback) {
         loopEachPixel(imgData, (i) => {
             imgData.data[i + 0] = 255 - imgData.data[i + 0];
             imgData.data[i + 1] = 255 - imgData.data[i + 1];
@@ -366,10 +366,10 @@
         }, () => callback(imgData));
     }
 
-    function convolutionThree() {
+    function convolutionHtmlInterfaceThree() {
         let {kernel, factor} = readConvolutionMatrixArray("convThree", "factorConvThree");
         console.log(kernel, factor);
-        convolutionProcessor(3, kernel, factor, get(), (processedImageData, wasModified) => {
+        convolution(3, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
             saveOp("Convolution 3x3");
@@ -377,10 +377,10 @@
         })
     }
 
-    function convolutionFive() {
+    function convolutionHtmlInterfaceFive() {
         let {kernel, factor} = readConvolutionMatrixArray("convFive", "factorConvFive");
         console.log(kernel, factor);
-        convolutionProcessor(5, kernel, factor, get(), (processedImageData, wasModified) => {
+        convolution(5, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
             saveOp("Convolution 5x5");
@@ -388,7 +388,7 @@
         })
     }
 
-    function convolutionProcessor(convolutionSize, kernel, factor, imgData, callback) {
+    function convolution(convolutionSize, kernel, factor, imgData, callback) {
         if (factor === undefined) {
             factor = 1;
         }
@@ -478,9 +478,9 @@
         return newImageData;
     }
 
-    function erode() {
+    function erodeHtmlInterface() {
         let windowSize = parseInt(document.getElementById("structuringElementSize").value);
-        erodeProcessor(windowSize, get(), (processedImageData, wasModified) => {
+        erode(windowSize, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             isBinary = isGreyscale = true;  // Image is now binary after morphological processing
             saveOp('Erode ' + windowSize + 'x' + windowSize + '');
@@ -497,7 +497,7 @@
      * @param imgData Canvas image data
      * @param callback Operation to perform when the image is completely processed
      */
-    function erodeProcessor(structuringElementSize, imgData, callback) {
+    function erode(structuringElementSize, imgData, callback) {
         if (!isBinary) {
             console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
             alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
@@ -527,9 +527,9 @@
         });
     }
 
-    function dilate() {
+    function dilateHtmlInterface() {
         let windowSize = parseInt(document.getElementById("structuringElementSize").value);
-        dilateProcessor(windowSize, get(), (processedImageData, wasModified) => {
+        dilate(windowSize, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             isBinary = isGreyscale = true;  // Image is now binary after morphological processing
             saveOp('Dilate ' + windowSize + 'x' + windowSize + '');
@@ -537,7 +537,7 @@
         });
     }
 
-    function dilateProcessor(structuringElementSize, imgData, callback) {
+    function dilate(structuringElementSize, imgData, callback) {
         if (!isBinary) {
             console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
             alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
@@ -567,9 +567,9 @@
     }
 
 
-    function opening() {
+    function openingHtmlInterface() {
         let windowSize = parseInt(document.getElementById("structuringElementSize").value);
-        openingProcessor(windowSize, get(), (processedImageData, wasModified) => {
+        opening(windowSize, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             isBinary = isGreyscale = true;  // Image is now binary after morphological processing
             saveOp('Opening ' + windowSize + 'x' + windowSize + '');
@@ -577,17 +577,17 @@
         });
     }
 
-    function openingProcessor(structuringElementSize, imgData, callback) {
-        erodeProcessor(structuringElementSize, imgData, (erodedImageData, didErodeModify) => {
-            dilateProcessor(structuringElementSize, erodedImageData, (erodeAndDilatedImageData, didDilateModify) => {
+    function opening(structuringElementSize, imgData, callback) {
+        erode(structuringElementSize, imgData, (erodedImageData, didErodeModify) => {
+            dilate(structuringElementSize, erodedImageData, (erodeAndDilatedImageData, didDilateModify) => {
                 callback(erodeAndDilatedImageData, didErodeModify || didDilateModify);
             })
         });
     }
 
-    function closing() {
+    function closingHtmlInterface() {
         let windowSize = parseInt(document.getElementById("structuringElementSize").value);
-        closingProcessor(windowSize, get(), (processedImageData, wasModified) => {
+        closing(windowSize, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             isBinary = isGreyscale = true;  // Image is now binary after morphological processing
             saveOp('Closing ' + windowSize + 'x' + windowSize + '');
@@ -595,9 +595,9 @@
         });
     }
 
-    function closingProcessor(structuringElementSize, imgData, callback) {
-        dilateProcessor(structuringElementSize, imgData, (dilatedImageData, didDilateModify) => {
-            erodeProcessor(structuringElementSize, dilatedImageData, (dilatedAndErodedImageData, didErodeModify) => {
+    function closing(structuringElementSize, imgData, callback) {
+        dilate(structuringElementSize, imgData, (dilatedImageData, didDilateModify) => {
+            erode(structuringElementSize, dilatedImageData, (dilatedAndErodedImageData, didErodeModify) => {
                 callback(dilatedAndErodedImageData, didDilateModify || didErodeModify);
             })
         });
