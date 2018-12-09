@@ -75,6 +75,11 @@
             <button onclick="invertHtmlInterface()">Invert</button>
             <input id="threshold" type="text" size="3" value="127">
             <button onclick="thresholdHtmlInterface(parseInt(document.getElementById('threshold').value))">Threshold</button>
+            <button onclick="thinHtmlInterface()">Thin</button>
+            <button onclick="thinOnceHtmlInterface()">Thin (Step)</button>
+            <input id="pruneSpurLength" type="text" size="3" value="15">
+            <button onclick="pruneHtmlInterface(parseInt(document.getElementById('pruneSpurLength').value))">Prune</button>
+            <button onclick="countWhitePixels()">Count White</button>
         </td>
     </tr>
     <tr>
@@ -279,20 +284,52 @@
         callback();
     }
 
-    function  loopKernel(kernelSize, imgData, beforeEachKernel, kernelPixelProc, afterEachKernel, callback) {
+    function loopKernel(kernelSize, imgData, beforeEachPixel, pixelProc, afterEachPixel, callback) {
+        // TODO: redo calls to this one s.t. it does the Array version w/ one element: loopKernelArray(kernelSize, [kernel], imgData, beforeEachPixel, pixelProc, afterEachPixel, callback) {
         let kernelBorderSize = Math.floor(kernelSize / 2);
         for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
             for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
                 let kernelCenterIndex = ((y * imgData.width) + x) * 4;
-                beforeEachKernel(kernelCenterIndex);
+                if (beforeEachPixel(kernelCenterIndex)) {
+                    continue; // If beforeEachPixel returns TRUE, this pixel will not be processed further
+                }
                 for (let yy = -kernelBorderSize; yy <= kernelBorderSize; ++yy) {
                     for (let xx = -kernelBorderSize; xx <= kernelBorderSize; ++xx) {
                         let i = ((y + yy) * imgData.width + (x + xx)) * 4;
                         let kernelCellIndex = ((yy + kernelBorderSize) * kernelSize) + (xx + kernelBorderSize);
-                        kernelPixelProc(i, kernelCellIndex);
+                        pixelProc(i, kernelCellIndex);
                     }
                 }
-                afterEachKernel(kernelCenterIndex);
+                afterEachPixel(kernelCenterIndex);
+            }
+        }
+        callback();
+    }
+
+    function loopKernelArray(kernelSize, kernels, imgData, beforeEachPixel, beforeEachKernel, pixelProc, afterEachKernel, afterEachPixel, callback) {
+        let kernelBorderSize = Math.floor(kernelSize / 2);
+        for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
+            for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
+                let kernelCenterIndex = ((y * imgData.width) + x) * 4;
+                if (beforeEachPixel(kernelCenterIndex)) {
+                    continue; // If beforeEachPixel returns TRUE, this pixel will not be processed further
+                }
+                exitPointForOnePixel:
+                for (let kernelNum = 0; kernelNum < kernels.length; ++kernelNum) {
+                    beforeEachKernel(kernelCenterIndex, kernelNum);
+                    exitPointForSingleKernel:
+                    for (let yy = -kernelBorderSize; yy <= kernelBorderSize; ++yy) {
+                        for (let xx = -kernelBorderSize; xx <= kernelBorderSize; ++xx) {
+                            let i = ((y + yy) * imgData.width + (x + xx)) * 4;
+                            let kernelCellIndex = ((yy + kernelBorderSize) * kernelSize) + (xx + kernelBorderSize);
+                            if (pixelProc(i, kernels[kernelNum][kernelCellIndex])) {
+                                break exitPointForSingleKernel;
+                            }
+                        }
+                    }
+                    afterEachKernel(kernelCenterIndex, kernelNum);
+                }
+                afterEachPixel(kernelCenterIndex);
             }
         }
         callback();
@@ -306,6 +343,18 @@
             ctx.putImageData(imgData, 0, 0);
             isGreyscale = isBinary = false;
             saveOp('Remove Blue');
+        });
+    }
+
+    function countWhitePixels() {
+        const imgData = get();
+        let count = 0;
+        loopEachPixel(imgData, (i) => {
+            if (imgData.data[i] === 255) {
+                count += 1;
+            }
+        }, () => {
+            alert("White pixels: " + count);
         });
     }
 
@@ -488,8 +537,15 @@
         });
     }
 
-    // TODO: These filters will break on odd-sized kernels, since loopKernel() is set up that way
-    // TODO:     Or will it? double check example
+    function assertionForMorphological() {
+        if (!isBinary) {
+            console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
+            alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
+                + 'Only the red channel will be used and preserved.\n\n'
+                + 'Consider reversing the changes and performing a threshold first.');
+        }
+    }
+
     /**
      * Perform erosion, using a square structuring element
      * Note: Using WHITE as the foreground colour for all morphological processing
@@ -498,12 +554,7 @@
      * @param callback Operation to perform when the image is completely processed
      */
     function erode(structuringElementSize, imgData, callback) {
-        if (!isBinary) {
-            console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
-            alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
-                + 'Only the red channel will be used and preserved.\n\n'
-                + 'Consider reversing the changes and performing a threshold first.');
-        }
+        assertionForMorphological();
 
         let newImageData = cloneImageData(imgData);
 
@@ -538,12 +589,7 @@
     }
 
     function dilate(structuringElementSize, imgData, callback) {
-        if (!isBinary) {
-            console.warn('Morphological operation performed on image that has not been thresholded first, and may not have been binary.');
-            alert('Morphological operations are not meaningful on non-binary (i.e. not pure black & white) images.\n\n'
-                + 'Only the red channel will be used and preserved.\n\n'
-                + 'Consider reversing the changes and performing a threshold first.');
-        }
+        assertionForMorphological();
 
         let newImageData = cloneImageData(imgData);
 
@@ -601,6 +647,85 @@
                 callback(dilatedAndErodedImageData, didDilateModify || didErodeModify);
             })
         });
+    }
+
+    function thinHtmlInterface() {
+        thin(get(), (processedImageData) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            saveOp('Thin');
+        });
+    }
+
+    function thinOnceHtmlInterface() {
+        thin(get(), (processedImageData) => {
+            ctx.putImageData(processedImageData, 0, 0);
+            saveOp('Thin (one step only)');
+        }, true);
+    }
+
+    const thinningKernelArray = [
+        [255, 255, 255, undefined, 255, undefined, 0, 0, 0],
+        [undefined, 255, 255, 0, 255, 255, 0, 0, undefined],
+        [0, undefined, 255, 0, 255, 255, 0, undefined, 255],
+        [0, 0, undefined, 0, 255, 255, undefined, 255, 255],
+        [0, 0, 0, undefined, 255, undefined, 255, 255, 255],
+        [undefined, 0, 0, 255, 255, 0, 255, 255, undefined],
+        [255, undefined, 0, 255, 255, 0, 255, undefined, 0],
+        [255, 255, undefined, 255, 255, 0, undefined, 0, 0],
+    ];
+    function thin(imgData, callback, once = false) {
+        assertionForMorphological();
+
+        // let newImageData = cloneImageData(imgData);
+
+        let anyModifiedThisLoop;
+        do {
+            anyModifiedThisLoop = false;
+            let thisKernelFullyMatches;
+            loopKernelArray(3, thinningKernelArray, imgData, (centerIndex) => {
+                if (imgData.data[centerIndex] === 0) {
+                    return true; // If pixel is already black (BG), don't even process this pixel
+                }
+                // thisPixelHasEvenOneKernelMatch = false;
+            }, (centreIndex, kernelNum) => {
+                thisKernelFullyMatches = true;
+            }, (i, currentKernelCurrentCell) => {
+                if (currentKernelCurrentCell !== undefined) {
+                    if (imgData.data[i] !== currentKernelCurrentCell) {
+                        thisKernelFullyMatches = false;
+                        return true; // One of this kernel's cells didnt' match. Break to next kernel
+                    }
+                }
+            }, (centerIndex, kernelNum) => {
+                if (thisKernelFullyMatches) {
+                    // newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2] = 0;
+                    imgData.data[centerIndex] = imgData.data[centerIndex + 1] = imgData.data[centerIndex + 2] = 0;
+                    anyModifiedThisLoop = true;
+                }
+                // if (thisKernelFullyMatches) {
+                //     thisPixelHasEvenOneKernelMatch = true;
+                // }
+            }, Function(), Function());
+            //     // if (!thisPixelHasEvenOneKernelMatch) {
+            //     //     // newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2] = 0;
+            //     //     imgData.data[centerIndex] = imgData.data[centerIndex + 1] = imgData.data[centerIndex + 2] = 0;
+            //     //     anyModifiedThisLoop = true;
+            //     // }
+            // }, () => {
+            //     ;
+            // });
+        } while (!once && anyModifiedThisLoop);
+
+        // callback(newImageData);
+        callback(imgData);
+    }
+
+    function pruneHtmlInterface(spurLength) {
+        throw "not implemented";
+    }
+
+    function prune(spurLength) {
+
     }
 
 </script>
