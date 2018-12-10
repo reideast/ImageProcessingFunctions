@@ -77,6 +77,7 @@
             <button onclick="thresholdHtmlInterface(parseInt(document.getElementById('threshold').value))">Threshold</button>
             <button onclick="thinHtmlInterface()">Thin</button>
             <button onclick="thinOnceHtmlInterface()">Thin (Step)</button>
+            <!-- TODO: prune -->
             <input id="pruneSpurLength" type="text" size="3" value="15">
             <button onclick="pruneHtmlInterface(parseInt(document.getElementById('pruneSpurLength').value))">Prune</button>
             <button onclick="countWhitePixels()">Count White</button>
@@ -284,8 +285,7 @@
         callback();
     }
 
-    function loopKernel(kernelSize, imgData, beforeEachPixel, pixelProc, afterEachPixel, callback) {
-        // TODO: redo calls to this one s.t. it does the Array version w/ one element: loopKernelArray(kernelSize, [kernel], imgData, beforeEachPixel, pixelProc, afterEachPixel, callback) {
+    function loopKernel(kernelSize, kernels, imgData, beforeEachPixel, beforeEachKernel, pixelProc, afterEachKernel, afterEachPixel, callback) {
         let kernelBorderSize = Math.floor(kernelSize / 2);
         for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
             for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
@@ -293,28 +293,6 @@
                 if (beforeEachPixel(kernelCenterIndex)) {
                     continue; // If beforeEachPixel returns TRUE, this pixel will not be processed further
                 }
-                for (let yy = -kernelBorderSize; yy <= kernelBorderSize; ++yy) {
-                    for (let xx = -kernelBorderSize; xx <= kernelBorderSize; ++xx) {
-                        let i = ((y + yy) * imgData.width + (x + xx)) * 4;
-                        let kernelCellIndex = ((yy + kernelBorderSize) * kernelSize) + (xx + kernelBorderSize);
-                        pixelProc(i, kernelCellIndex);
-                    }
-                }
-                afterEachPixel(kernelCenterIndex);
-            }
-        }
-        callback();
-    }
-
-    function loopKernelArray(kernelSize, kernels, imgData, beforeEachPixel, beforeEachKernel, pixelProc, afterEachKernel, afterEachPixel, callback) {
-        let kernelBorderSize = Math.floor(kernelSize / 2);
-        for (let y = kernelBorderSize; y < imgData.height - kernelBorderSize; ++y) {
-            for (let x = kernelBorderSize; x < imgData.width - kernelBorderSize; ++x) {
-                let kernelCenterIndex = ((y * imgData.width) + x) * 4;
-                if (beforeEachPixel(kernelCenterIndex)) {
-                    continue; // If beforeEachPixel returns TRUE, this pixel will not be processed further
-                }
-                exitPointForOnePixel:
                 for (let kernelNum = 0; kernelNum < kernels.length; ++kernelNum) {
                     beforeEachKernel(kernelCenterIndex, kernelNum);
                     exitPointForSingleKernel:
@@ -377,7 +355,6 @@
 
     function thresholdHtmlInterface(level) {
         const imgData = get();
-        // TODO: Should threshold ALWAYS greyscale first? Shouldn't the user get to specify?
         greyscale(imgData, (greyscaleImageData) => {
             // TODO: to avoid callback chaining, convert everything to promises, or maybe async
             threshold(level, greyscaleImageData, (thresholdImageData) => {
@@ -417,7 +394,6 @@
 
     function convolutionHtmlInterfaceThree() {
         let {kernel, factor} = readConvolutionMatrixArray("convThree", "factorConvThree");
-        console.log(kernel, factor);
         convolution(3, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
@@ -428,7 +404,6 @@
 
     function convolutionHtmlInterfaceFive() {
         let {kernel, factor} = readConvolutionMatrixArray("convFive", "factorConvFive");
-        console.log(kernel, factor);
         convolution(5, kernel, factor, get(), (processedImageData, wasModified) => {
             ctx.putImageData(processedImageData, 0, 0);
             // Doesn't change greyscale one way or another (as I've chosen to defined it, I let convolution work on all 3 colours)
@@ -446,17 +421,17 @@
 
         let anyModified = false;
         let redSum, greenSum, blueSum;
-        loopKernel(convolutionSize, imgData, () => {
+        loopKernel(convolutionSize, [kernel], imgData, () => {
             redSum = blueSum = greenSum = 0.0;
-        }, (i, kernelCellIndex) => {
-            redSum += imgData.data[i + 0] * kernel[kernelCellIndex];
-            greenSum += imgData.data[i + 1] * kernel[kernelCellIndex];
-            blueSum += imgData.data[i + 2] * kernel[kernelCellIndex];
-        }, (centerIndex) => {
-            newImageData.data[centerIndex + 0] = parseInt(redSum) * factor;
-            newImageData.data[centerIndex + 1] = parseInt(greenSum) * factor;
-            newImageData.data[centerIndex + 2] = parseInt(blueSum) * factor;
-            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]
+        }, Function(), (i, kernelCell) => {
+            redSum += imgData.data[i] * kernelCell;
+            greenSum += imgData.data[i + 1] * kernelCell;
+            blueSum += imgData.data[i + 2] * kernelCell;
+        }, Function(), (centerIndex) => {
+            newImageData.data[centerIndex] = parseInt(redSum * factor);
+            newImageData.data[centerIndex + 1] = parseInt(greenSum * factor);
+            newImageData.data[centerIndex + 2] = parseInt(blueSum * factor);
+            if (imgData.data[centerIndex] !== newImageData.data[centerIndex]
                 || imgData.data[centerIndex + 1] !== newImageData.data[centerIndex + 1]
                 || imgData.data[centerIndex + 2] !== newImageData.data[centerIndex + 2]) {
                 anyModified = true;
@@ -560,17 +535,18 @@
 
         let anyModified = false;
         let allPixelsForeground;
-        loopKernel(structuringElementSize, imgData, () => {
+        loopKernel(structuringElementSize, [new Array(structuringElementSize * structuringElementSize)], imgData, () => {
             allPixelsForeground = true;
-        }, (i) => {
+        }, Function(), (i) => {
             if (imgData.data[i] !== 255) {
                 allPixelsForeground = false;
+                return true;
             }
-        }, (centerIndex) => {
+        }, Function(), (centerIndex) => {
             // TODO: Is it erroneous to be subtracting the pixels if the filter doesn't pass?
-            newImageData.data[centerIndex + 0] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
+            newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
                 = (allPixelsForeground ? 255 : 0);
-            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]) {
+            if (imgData.data[centerIndex] !== newImageData.data[centerIndex]) {
                 anyModified = true;
             }
         }, () => {
@@ -595,23 +571,23 @@
 
         let anyModified = false;
         let anyPixelsForeground;
-        loopKernel(structuringElementSize, imgData, () => {
+        loopKernel(structuringElementSize, [new Array(structuringElementSize * structuringElementSize)], imgData, () => {
             anyPixelsForeground = false;
-        }, (i) => {
+        }, Function(), (i) => {
             if (imgData.data[i] === 255) {
                 anyPixelsForeground = true;
+                return true;
             }
-        }, (centerIndex) => {
-            newImageData.data[centerIndex + 0] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
+        }, Function(), (centerIndex) => {
+            newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2]
                 = (anyPixelsForeground ? 255 : 0);
-            if (imgData.data[centerIndex + 0] !== newImageData.data[centerIndex + 0]) {
+            if (imgData.data[centerIndex] !== newImageData.data[centerIndex]) {
                 anyModified = true;
             }
         }, () => {
             callback(newImageData, anyModified);
         });
     }
-
 
     function openingHtmlInterface() {
         let windowSize = parseInt(document.getElementById("structuringElementSize").value);
@@ -682,12 +658,11 @@
         do {
             anyModifiedThisLoop = false;
             let thisKernelFullyMatches;
-            loopKernelArray(3, thinningKernelArray, imgData, (centerIndex) => {
+            loopKernel(3, thinningKernelArray, imgData, (centerIndex) => {
                 if (imgData.data[centerIndex] === 0) {
                     return true; // If pixel is already black (BG), don't even process this pixel
                 }
-                // thisPixelHasEvenOneKernelMatch = false;
-            }, (centreIndex, kernelNum) => {
+            }, () => {
                 thisKernelFullyMatches = true;
             }, (i, currentKernelCurrentCell) => {
                 if (currentKernelCurrentCell !== undefined) {
@@ -696,27 +671,14 @@
                         return true; // One of this kernel's cells didnt' match. Break to next kernel
                     }
                 }
-            }, (centerIndex, kernelNum) => {
+            }, (centerIndex) => {
                 if (thisKernelFullyMatches) {
-                    // newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2] = 0;
                     imgData.data[centerIndex] = imgData.data[centerIndex + 1] = imgData.data[centerIndex + 2] = 0;
                     anyModifiedThisLoop = true;
                 }
-                // if (thisKernelFullyMatches) {
-                //     thisPixelHasEvenOneKernelMatch = true;
-                // }
             }, Function(), Function());
-            //     // if (!thisPixelHasEvenOneKernelMatch) {
-            //     //     // newImageData.data[centerIndex] = newImageData.data[centerIndex + 1] = newImageData.data[centerIndex + 2] = 0;
-            //     //     imgData.data[centerIndex] = imgData.data[centerIndex + 1] = imgData.data[centerIndex + 2] = 0;
-            //     //     anyModifiedThisLoop = true;
-            //     // }
-            // }, () => {
-            //     ;
-            // });
         } while (!once && anyModifiedThisLoop);
 
-        // callback(newImageData);
         callback(imgData);
     }
 

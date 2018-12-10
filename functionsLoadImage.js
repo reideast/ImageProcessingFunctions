@@ -29,7 +29,7 @@ function loadImageByDefaultFilename() {
 }
 
 function paintLoadedImage(img, filenameDescription) {
-    width = img.naturalWidth;  // DEBUG: is this actually changing the GLOBAL width?
+    width = img.naturalWidth;
     height = img.naturalHeight;
     canvas.width = width;
     canvas.height = height;
